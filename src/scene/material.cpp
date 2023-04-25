@@ -38,7 +38,7 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 	// you'll want to use code that looks something
 	// like this:
 	//
-	printf("scene %p\n", scene);
+	// printf("scene %p\n", scene);
 	glm::dvec3 rayDirection = r.getDirection();
 	glm::dvec3 rayIntersectPosition = r.at(i);
 	glm::dvec3 normal = i.getN();
@@ -47,20 +47,20 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 	glm::dvec3 diffuse(0.0, 0.0, 0.0);
 	// glm::dvec3 specular(0.0, 0.0, 0.0);
 	// glm::dvec3 light(0.0, 0.0, 0.0);
-	printf("about to iterate through lights\n");
-	printf("rayIntersectPosition %f, %f, %f\n", rayIntersectPosition.x, rayIntersectPosition.y, rayIntersectPosition.z);
+	// printf("about to iterate through lights\n");
+	// printf("rayIntersectPosition %f, %f, %f\n", rayIntersectPosition.x, rayIntersectPosition.y, rayIntersectPosition.z);
 
 	for ( const auto& pLight : scene->getAllLights() ) {
-		printf("plight %p\n", pLight.get());
+		// printf("plight %p\n", pLight.get());
 		glm::dvec3 directionOfLightFromRayIntersect = pLight->getDirection(rayIntersectPosition);
-		printf("directionOfLightFromRayIntersect %f, %f, %f\n", directionOfLightFromRayIntersect.x, directionOfLightFromRayIntersect.y, directionOfLightFromRayIntersect.z);
-		printf("pLight->distanceAttenuation %f\n", pLight->distanceAttenuation(rayIntersectPosition));
-		printf("shadow attenuation time, r %p\n", &r);
-		glm::vec3 shadowAtten = pLight->shadowAttenuation(r, rayIntersectPosition);
-		printf("pLight->shadowAttenuation %p\n", &shadowAtten);
-		printf("pLight->getColor %f, %f, %f\n", pLight->getColor().r, pLight->getColor().g, pLight->getColor().b);
+		// printf("directionOfLightFromRayIntersect %f, %f, %f\n", directionOfLightFromRayIntersect.x, directionOfLightFromRayIntersect.y, directionOfLightFromRayIntersect.z);
+		// printf("pLight->distanceAttenuation %f\n", pLight->distanceAttenuation(rayIntersectPosition));
+		// printf("shadow attenuation time, r %p\n", &r);
+		// glm::vec3 shadowAtten = pLight->shadowAttenuation(r, rayIntersectPosition);
+		// printf("pLight->shadowAttenuation %p\n", &shadowAtten);
+		// printf("pLight->getColor %f, %f, %f\n", pLight->getColor().r, pLight->getColor().g, pLight->getColor().b);
 		auto iIn = pLight->distanceAttenuation(rayIntersectPosition) * pLight->shadowAttenuation(r, rayIntersectPosition) * pLight->getColor();
-		printf("iIn %f, %f, %f\n", iIn.r, iIn.g, iIn.b);
+		// printf("iIn %f, %f, %f\n", iIn.r, iIn.g, iIn.b);
 		auto dot = glm::dot(directionOfLightFromRayIntersect, normal);
 		if (Trans()) {
 			dot = abs(dot);
@@ -68,7 +68,7 @@ glm::dvec3 Material::shade(Scene* scene, const ray& r, const isect& i) const
 		else {
 			dot = max(dot, 0.0);
 		}
-		glm::dvec3 pDiffuse = kd(i) * dot * iIn;
+		glm::dvec3 pDiffuse = dot * iIn;
 		diffuse += pDiffuse;
 		// glm::dvec3 reflect = glm::reflect(-directionOfLightFromRayIntersect, normal);
 		// auto maxDot = max(glm::dot(reflect, -rayDirection), 0.0);
