@@ -11,12 +11,14 @@ using namespace std;
 double DirectionalLight::distanceAttenuation(const glm::dvec3& P) const
 {
 	// distance to light is infinite, so f(di) goes to 0.  Return 1.
+	printf("test\n");
 	return 1.0;
 }
 
 
 glm::dvec3 DirectionalLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 {
+	printf("directionallight shadow atten\n");
 	// YOUR CODE HERE:
 	glm::dvec3 attenuation = r.getAtten();
 	glm::dvec3 rayDirection = r.getDirection();
@@ -46,11 +48,13 @@ glm::dvec3 DirectionalLight::shadowAttenuation(const ray& r, const glm::dvec3& p
 		intersecting = scene->intersect(shadow, shadowIntersect);
 		shadowIntersectPosition = shadow.at(shadowIntersect);
 	}
+	printf("directionallight shadow atten finish\n");
 	return attenuation;
 }
 
 glm::dvec3 DirectionalLight::getColor() const
 {
+	printf("color\n");
 	return color;
 }
 
@@ -71,12 +75,14 @@ double PointLight::distanceAttenuation(const glm::dvec3& P) const
 	// float constantTerm;		// a
 	// float linearTerm;		// b
 	// float quadraticTerm;		// c
+	printf("pointlight dist atten\n");
 	double d = sqrt(pow(P.x - position.x, 2) + pow(P.y - position.y, 2) + pow(P.z - position.z, 2));
 	return min(1.0, 1.0/(constantTerm + linearTerm * d + quadraticTerm * pow(d, 2)));
 }
 
 glm::dvec3 PointLight::getColor() const
 {
+	printf("color\n");
 	return color;
 }
 
@@ -88,6 +94,7 @@ glm::dvec3 PointLight::getDirection(const glm::dvec3& P) const
 
 glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 {
+	printf("pointlight shadow atten\n");
 	// YOUR CODE HERE:
 	// You should implement shadow-handling code here.
 	glm::dvec3 attenuation = r.getAtten();
@@ -117,6 +124,7 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 		intersect = scene->intersect(shadow, shadowIntersect);
 		shadowIntersectPosition = shadow.at(shadowIntersect);
 	}
+	printf("pointlight shadow atten finish\n");
 	return attenuation;
 }
 
