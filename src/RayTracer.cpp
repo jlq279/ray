@@ -191,13 +191,16 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			// printf("nt %f, %f, %f\n", nt.x, nt.y, nt.z);
 			// printf("nb %f, %f, %f\n", nb.x, nb.y, nb.z);
 			float pdf = 1 / (2 * M_PI);
+			//std::random_dev dev;
+			//std::mt19937 rng(dev());
+
 			std::default_random_engine generator;
 			std::uniform_real_distribution<float> distribution(0, 1);
 			uint32_t N = 16;
 			glm::dvec3 indirect(0.0, 0.0, 0.0);
 			for (uint32_t i = 0; i < N; ++i) {
-				float r1 = distribution(generator);
-				float r2 = distribution(generator);
+				float r1 = ((double) rand() / RAND_MAX);
+				float r2 = ((double) rand() / RAND_MAX);
 				// printf("r1 %f, r2 %f\n", r1, r2);
 				glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
 				// printf("sample %f, %f, %f\n", sample.x, sample.y, sample.z);
