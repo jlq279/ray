@@ -198,7 +198,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			for (uint32_t i = 0; i < N; ++i) {
 				float r1 = distribution(generator);
 				float r2 = distribution(generator);
-				printf("r1 %f, r2 %f\n", r1, r2);
+				// printf("r1 %f, r2 %f\n", r1, r2);
 				glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
 				// printf("sample %f, %f, %f\n", sample.x, sample.y, sample.z);
 				glm::dvec3 sampleWorld( 
@@ -210,7 +210,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				// printf("sampleRay %f, %f, %f\n", sampleRay.getPosition().x, sampleRay.getPosition().y, sampleRay.getPosition().z);
 				glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
 				// printf("traced %f, %f, %f\n", traced.r, traced.g, traced.b);
-				indirect += glm::dvec3(r1 * traced.r / pdf, r1 * traced.g / pdf, r1 * traced.b / pdf);
+				indirect += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b);
 			}
 			indirect /= (float) N;
 			colorC = (direct + glm::dvec3(2 * indirect.r, 2 * indirect.g, 2 * indirect.b)) * m.kd(i);
