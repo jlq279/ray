@@ -196,7 +196,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 
 			std::default_random_engine generator;
 			std::uniform_real_distribution<float> distribution(0, 1);
-			uint32_t N = 16;
+			uint32_t N = 256;
 			glm::dvec3 indirect(0.0, 0.0, 0.0);
 			for (uint32_t i = 0; i < N; ++i) {
 				float r1 = ((double) rand() / RAND_MAX);
@@ -216,7 +216,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				indirect += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b);
 			}
 			indirect /= (float) N;
-			colorC = (direct + glm::dvec3(2 * indirect.r, 2 * indirect.g, 2 * indirect.b)) * m.kd(i);
+			colorC = (direct + glm::dvec3(2*indirect.r, 2*indirect.g, 2*indirect.b)) * m.kd(i);
 		}
 		else {
 			colorC = direct * m.kd(i);
