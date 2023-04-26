@@ -105,7 +105,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 #if VERBOSE
 	std::cerr << "== current depth: " << depth << std::endl;
 #endif
-
 	if(scene->intersect(r, i)) {
 		// YOUR CODE HERE
 
@@ -118,16 +117,10 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		// more steps: add in the contributions from reflected and refracted
 		// rays.
 
-		// printf("traceray intersect\n");
-		
 		const Material& m = i.getMaterial();
-		// printf("material\n");
 		glm::dvec3 direct = m.shade(scene.get(), r, i);
-		// printf("colorC %f, %f, %f\n", colorC.r, colorC.g, colorC.b);
 		glm::dvec3 intersectPosition = r.at(i);
-		// printf("intersectPosition %f, %f, %f\n", intersectPosition.x, intersectPosition.y, intersectPosition.z);
 		glm::dvec3 n = i.getN();
-		// printf("n %f, %f, %f\n", n.x, n.y, n.z);
 		// if (m.Recur() && depth > 0) {
 		// 	glm::dvec3 rayPosition = r.getPosition();
 		// 	glm::dvec3 rayDirection = r.getDirection();
@@ -188,35 +181,25 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			glm::dvec3 nt(0.0, 0.0, 0.0);
 			glm::dvec3 nb(0.0, 0.0, 0.0);
 			createCoordinateSystem(n, nt, nb);
-			// printf("nt %f, %f, %f\n", nt.x, nt.y, nt.z);
-			// printf("nb %f, %f, %f\n", nb.x, nb.y, nb.z);
 			float pdf = 1 / (2 * M_PI);
-			//std::random_dev dev;
-			//std::mt19937 rng(dev());
-
+			uint32_t N = 64;
 			std::default_random_engine generator;
 			std::uniform_real_distribution<float> distribution(0, 1);
-			uint32_t N = 16;
 			glm::dvec3 indirect(0.0, 0.0, 0.0);
 			for (uint32_t i = 0; i < N; ++i) {
 				float r1 = ((double) rand() / RAND_MAX);
 				float r2 = ((double) rand() / RAND_MAX);
-				// printf("r1 %f, r2 %f\n", r1, r2);
 				glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
-				// printf("sample %f, %f, %f\n", sample.x, sample.y, sample.z);
 				glm::dvec3 sampleWorld( 
 					sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
 					sample.x * nb.y + sample.y * n.y + sample.z * nt.y,
 					sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
-				// printf("sampleWorld %f, %f, %f\n", sampleWorld.x, sampleWorld.y, sampleWorld.z);
 				ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
-				// printf("sampleRay %f, %f, %f\n", sampleRay.getPosition().x, sampleRay.getPosition().y, sampleRay.getPosition().z);
 				glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
-				// printf("traced %f, %f, %f\n", traced.r, traced.g, traced.b);
 				indirect += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b);
 			}
 			indirect /= (float) N;
-			colorC = (direct + glm::dvec3(2 * indirect.r, 2 * indirect.g, 2 * indirect.b)) * m.kd(i);
+			colorC = (direct + glm::dvec3(indirect.r,  indirect.g, indirect.b)) * m.kd(i);
 		}
 		else {
 			colorC = direct * m.kd(i);

@@ -20,7 +20,7 @@ scale(2,
 rotate(2,0,1,3.1415,
 box { 
 	material = {
-		diffuse = (0.4,0.4,0.4);
+		diffuse = (1.0,1.0,1.0);
 		index = 1.3;
 	}
 })))
@@ -28,7 +28,7 @@ box {
 translate(1.5, -2.5, 3,
 	sphere {
 		material = {
-			diffuse = (0.4,0.4,0.4);
+			diffuse = (1.0,1.0,1.0);
 		index = 1.8;
 		}
 	}
@@ -39,7 +39,7 @@ translate( 0,0,6,
 		rotate(1,0,0,3.1415,
 			square { 
 				material = { 
-					diffuse = (0.4,0.4,0.4) 
+					diffuse = (1.0,1.0,1.0) 
 			}})))
 
 translate(0,-3.5,3,
@@ -47,7 +47,7 @@ translate(0,-3.5,3,
 		rotate(1,0,0,-1.57,
 			square { 
 				material = { 
-					diffuse = (0.4,0.4,0.4) 
+					diffuse = (1.0,1.0,1.0) 
 			}})))
 
 translate( 3.5,0,0,
@@ -55,7 +55,7 @@ translate( 3.5,0,0,
 		rotate(0,1,0,-1.57,
 			square { 
 				material = { 
-					diffuse = (0.4,0.0,0.0) 
+					diffuse = (1.0,0.0,0.0) 
 			}})))
 
 translate( -3.5,0,0,
@@ -63,6 +63,6 @@ translate( -3.5,0,0,
 		rotate(0,1,0,-1.57,
 			square { 
 				material = { 
-					diffuse = (0.0,0.4,0.0) 
+					diffuse = (0.0,1.0,0.0) 
 			}})))
 
