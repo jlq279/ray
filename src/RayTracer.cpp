@@ -362,11 +362,7 @@ void RayTracer::launchThread()
 	const int thread = threads_indices.back();
 	threads_indices.pop_back();
 	myMutex.unlock();
-	printf("thread: %d\n", thread);
-	int start = thread * ((w * h)/threads);
-	int numPixels = min((w * h)/(int)threads, w * h - start);
-	for (int i = 0; i < numPixels; i++) {
-		int px = start + i;
+	for (int px = thread; px < w * h; px+=threads) {
 		int x = px % w;
 		int y = px / w;
 		if (traceUI->m_3dSwitch()) {
@@ -377,7 +373,6 @@ void RayTracer::launchThread()
 			pixel[2] = (int)( 255.0 * color[2]);
 		}
 		else {
-			// printf("tracing %d %d, %d\n", x, y, thread);
 			tracePixel(x, y);
 		}
 	}
@@ -412,15 +407,6 @@ void RayTracer::traceImage(int w, int h)
 		lock_guard<mutex> guard(myMutex);
 		threads_indices.push_back(thread);
 		threads_arr.push_back(std::thread(&RayTracer::launchThread, this));
-		// if (col + 1 < w) {
-		// 	lock_guard<mutex> guard(myMutex);
-		// 	++col;
-		// }
-		// else {
-		// 	lock_guard<mutex> guard(myMutex);
-		// 	++row;
-		// 	col = 0;
-		// }
 	}
 	
 }
@@ -431,7 +417,6 @@ glm::dvec3 RayTracer::adaptiveSupersampling(double x, double y, double dimension
 	glm::dvec3 top_right = trace(x + dimension/2, y);
 	glm::dvec3 bottom_left = trace(x - dimension/2, y + dimension/2);
 	glm::dvec3 bottom_right = trace(x + dimension/2, y + dimension/2);
-	// rays += 5;
 	glm::dvec3 average = (center + top_left + top_right + bottom_left + bottom_right)/5.0;
 	if (depth == 0) {
 		return average;
@@ -473,15 +458,11 @@ int RayTracer::assAAImage() {
 			double pixel_dimension = 1.0/buffer_width;
 			double x = i * pixel_dimension + pixel_dimension/2;
 			double y = j * pixel_dimension + pixel_dimension/2;
-			// rays = 0;
 			glm::dvec3 color = adaptiveSupersampling(x, y, pixel_dimension, 10);
 			unsigned char *pixel = buffer.data() + ( i + j * buffer_width ) * 3;
 			pixel[0] = (int)( 255.0 * color[0]);
 			pixel[1] = (int)( 255.0 * color[1]);
 			pixel[2] = (int)( 255.0 * color[2]);
-			// pixel[0] = rays;
-			// pixel[1] = rays;
-			// pixel[2] = rays;
 		}
 	}
 	return 0;
@@ -531,7 +512,6 @@ bool RayTracer::checkRender()
 	//
 	// TIPS: Introduce an array to track the status of each worker thread.
 	//       This array is maintained by the worker threads.
-	waitRender();
 	return threads_finished.size() == threads;
 }
 
@@ -544,7 +524,6 @@ void RayTracer::waitRender()
 	//
 	// TIPS: Join all worker threads here.
 	for (std::thread& t : threads_arr) {
-		printf("joining thread\n");
 		t.join();
 	}
 }

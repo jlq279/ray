@@ -332,6 +332,7 @@ void GraphicalUI::cb_render(Fl_Widget* o, void* v) {
 			Fl::wait(0);			
 			if (Fl::damage()) { Fl::flush(); }
 		}
+		pUI->raytracer->waitRender();
 		traceTime = clock() - startTime;
 		t_now = std::chrono::high_resolution_clock::now();
 		auto t_trace = std::chrono::duration<double, std::ratio<1>>(t_now - t_start).count();
