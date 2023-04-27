@@ -17,6 +17,8 @@
 #include <glm/gtx/io.hpp>
 #include <string.h> // for memset
 #include <random>
+#include <mutex>
+#include <thread>
 
 #include <iostream>
 #include <fstream>
@@ -292,7 +294,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 }
 
 RayTracer::RayTracer()
-	: scene(nullptr), buffer(0), thresh(0), buffer_width(0), buffer_height(0), m_bBufferReady(false)
+	: scene(nullptr), buffer(0), thresh(0), buffer_width(0), buffer_height(0), m_bBufferReady(false), threads_arr(0), threads_indices(0), threads_finished(0) 
 {
 }
 
@@ -378,10 +380,15 @@ void RayTracer::traceSetup(int w, int h)
 	samples = traceUI->getSuperSamples();
 	aaThresh = traceUI->getAaThreshold();
 	m_3dOffset = traceUI->get3dOffset();
+	
 
 	// YOUR CODE HERE
 	// FIXME: Additional initializations
-
+	this->w = w;
+	this->h = h;
+	threads_arr.clear();
+	threads_indices.clear();
+	threads_finished.clear();
 	if (sceneLoaded()) {
 		auto depth = traceUI->getMaxDepth();
 		auto leafSize = traceUI->getLeafSize();
@@ -412,6 +419,30 @@ glm::dvec3 RayTracer::traceOffset(double x, double y, double offset)
 	return glm::dvec3(red.r + red.g + red.b, green.r + green.g + green.b, blue.r + blue.g + blue.b);
 }
 
+void RayTracer::launchThread()
+{
+	myMutex.lock();
+	const int thread = threads_indices.back();
+	threads_indices.pop_back();
+	myMutex.unlock();
+	for (int px = thread; px < w * h; px+=threads) {
+		int x = px % w;
+		int y = px / w;
+		if (traceUI->m_3dSwitch()) {
+			glm::dvec3 color = traceOffset(double(x)/double(buffer_width), double(y)/double(buffer_height), m_3dOffset/100);
+			unsigned char *pixel = buffer.data() + ( x + y * buffer_width ) * 3;
+			pixel[0] = (int)( 255.0 * color[0]);
+			pixel[1] = (int)( 255.0 * color[1]);
+			pixel[2] = (int)( 255.0 * color[2]);
+		}
+		else {
+			tracePixel(x, y);
+		}
+	}
+	lock_guard<mutex> guard(myMutex);
+	threads_finished.push_back(true);
+}
+
 /*
  * RayTracer::traceImage
  *
@@ -435,33 +466,12 @@ void RayTracer::traceImage(int w, int h)
 	//
 	//       An asynchronous traceImage lets the GUI update your results
 	//       while rendering.
-	if (traceUI->m_3dSwitch()) {
-		for (int i = 0; i < w; i++) {
-			for (int j = 0; j < h; j++) {
-				glm::dvec3 color = traceOffset(double(i)/double(buffer_width), double(j)/double(buffer_height), m_3dOffset/100);
-				unsigned char *pixel = buffer.data() + ( i + j * buffer_width ) * 3;
-				pixel[0] = (int)( 255.0 * color[0]);
-				pixel[1] = (int)( 255.0 * color[1]);
-				pixel[2] = (int)( 255.0 * color[2]);
-			}
-		}
+	for (int thread = 0; thread < threads; ++thread) {
+		lock_guard<mutex> guard(myMutex);
+		threads_indices.push_back(thread);
+		threads_arr.push_back(std::thread(&RayTracer::launchThread, this));
 	}
-	else {
-		for (int i = 0; i < w; i++) {
-			if(i == w / 10) printf("10 done\n");
-			if(i == w / 5) printf("20 done\n");
-			if(i == w * 3 / 10) printf("30 done\n");
-			if(i == w * 4 / 10) printf("40 done\n");
-			if(i == w * 5 / 10) printf("50 done\n");
-			if(i == w * 6 / 10) printf("60 done\n");
-			if(i == w * 7 / 10) printf("70 done\n");
-			if(i == w * 8/ 10) printf("80 done\n");
-			if(i == w * 9 / 10) printf("90 done\n");
-			for (int j = 0; j < h; j++) {
-				tracePixel(i, j);
-			}
-		}
-	}
+	
 }
 
 glm::dvec3 RayTracer::adaptiveSupersampling(double x, double y, double dimension, int depth) {
@@ -470,7 +480,6 @@ glm::dvec3 RayTracer::adaptiveSupersampling(double x, double y, double dimension
 	glm::dvec3 top_right = trace(x + dimension/2, y);
 	glm::dvec3 bottom_left = trace(x - dimension/2, y + dimension/2);
 	glm::dvec3 bottom_right = trace(x + dimension/2, y + dimension/2);
-	// rays += 5;
 	glm::dvec3 average = (center + top_left + top_right + bottom_left + bottom_right)/5.0;
 	if (depth == 0) {
 		return average;
@@ -512,15 +521,11 @@ int RayTracer::assAAImage() {
 			double pixel_dimension = 1.0/buffer_width;
 			double x = i * pixel_dimension + pixel_dimension/2;
 			double y = j * pixel_dimension + pixel_dimension/2;
-			// rays = 0;
 			glm::dvec3 color = adaptiveSupersampling(x, y, pixel_dimension, 10);
 			unsigned char *pixel = buffer.data() + ( i + j * buffer_width ) * 3;
 			pixel[0] = (int)( 255.0 * color[0]);
 			pixel[1] = (int)( 255.0 * color[1]);
 			pixel[2] = (int)( 255.0 * color[2]);
-			// pixel[0] = rays;
-			// pixel[1] = rays;
-			// pixel[2] = rays;
 		}
 	}
 	return 0;
@@ -570,7 +575,7 @@ bool RayTracer::checkRender()
 	//
 	// TIPS: Introduce an array to track the status of each worker thread.
 	//       This array is maintained by the worker threads.
-	return true;
+	return threads_finished.size() == threads;
 }
 
 void RayTracer::waitRender()
@@ -581,6 +586,9 @@ void RayTracer::waitRender()
 	//        traceImage implementation.
 	//
 	// TIPS: Join all worker threads here.
+	for (std::thread& t : threads_arr) {
+		t.join();
+	}
 }
 
 
