@@ -7,6 +7,8 @@ IF (WIN32)
 	endif()
 ENDIF ()
 
+SET(CMAKE_CXX_FLAGS "-std=c++0x")
+
 project(GLSL)
 
 FILE(GLOB cmakes ${CMAKE_SOURCE_DIR}/cmake/*.cmake)

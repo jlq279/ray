@@ -39,6 +39,7 @@ public:
 	void getBuffer(unsigned char*& buf, int& w, int& h);
 	double aspectRatio();
 
+	void launchThread();
 	void traceImage(int w, int h);
 	int aaImage();
 	int assAAImage();
@@ -72,9 +73,16 @@ private:
 	int rays;
 	double m_3dOffset; 
 	std::unique_ptr<Scene> scene;
+	std::vector<std::thread> threads_arr;
+	std::vector<int> threads_indices;
+	std::vector<bool> threads_finished;
+	int w;
+	int h;
+	std::mutex myMutex;
+
 
 	bool m_bBufferReady;
-
+	bool renderReady;
 };
 
 #endif // __RAYTRACER_H__
