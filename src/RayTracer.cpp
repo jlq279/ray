@@ -143,39 +143,44 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			}
 			else  
 			{
-				reflect = glm::reflect(rayDirection, -n);
+				reflect = glm::reflect(rayDirection, n);
 			}
 			if(m.Spec())
 			{
 				createCoordinateSystem(reflect, nt, nb);
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
-				for(uint32_t l = 0; l < N; ++l)
+				uint32_t l = 0;
+				for(; l < N * m.ks(i).r; ++l)
 				{
 					float r1 = ((double) rand() / RAND_MAX) / m.shininess(i);
 					float r2 = ((double) rand() / RAND_MAX);
 					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
-					if(glm::dot(sample, n) < 0)
-					{
-						sample = sample - 2 * glm::dot(sample, n) * n;
-					}
+					// if(glm::dot(sample, n) < 0)
+					// {
+					// 	sample = sample - 2 * glm::dot(sample, n) * n;
+					// }
 					glm::dvec3 sampleWorld( 
 						sample.x * nb.x + sample.y * reflect.x + sample.z * nt.x,
 						sample.x * nb.y + sample.y * reflect.y + sample.z * nt.y,
 						sample.x * nb.z + sample.y * reflect.z + sample.z * nt.z);
 					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1, 1, 1), ray::REFLECTION);
 					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
-					// for(const auto& pLight : scene->getAllLights() )
-					// {
-					// 	glm::dvec3 directionOfLightFromRayIntersect = pLight->getDirection(r.at(i));
-					// 	glm::dvec3 reflect2 = glm::reflect(-directionOfLightFromRayIntersect, n);
-					// 	auto maxDot = max(glm::dot(reflect2, -rayDirection), 0.0);
-					// 	auto iIn = pLight->distanceAttenuation(intersectPosition) * pLight->shadowAttenuation(r, intersectPosition) * pLight->getColor();
-
-					// 	glm::dvec3 pSpecular = m.ks(i)  * iIn * pow(maxDot, m.shininess(i));
-					// 	contribution += pSpecular;
-
-					// }
 					contribution += (traced.x < 0 || traced.y < 0 || traced.z < 0)?glm::dvec3(0, 0, 0) : traced * m.ks(i);
+					
+				}
+				createCoordinateSystem(n, nt, nb);
+				for(; l < N; ++l)
+				{
+					float r1 = ((double) rand() / RAND_MAX);
+					float r2 = ((double) rand() / RAND_MAX);
+					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
+					glm::dvec3 sampleWorld( 
+						sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
+						sample.x * nb.y + sample.y * n.y + sample.z * nt.y,
+						sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
+					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
+					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
+					contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b) * m.kd(i);
 					
 				}
 
