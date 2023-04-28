@@ -480,7 +480,7 @@ void DebuggingView::drawRays()
 			case ray::REFLECTION:
 				if (!m_showReflectionRays)
 					continue;
-				glColor4f(1.0f, 1.0f, 0.0f, 1.0f);
+				glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
 				break;
 
 			case ray::REFRACTION:

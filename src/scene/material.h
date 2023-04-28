@@ -235,7 +235,7 @@ public:
     // setting functions taking MaterialParameters
     void setEmissive( const MaterialParameter& ke )            { _ke = ke; }
     void setAmbient( const MaterialParameter& ka )             { _ka = ka; }
-    void setSpecular( const MaterialParameter& ks )            { _ks = ks; }
+    void setSpecular( const MaterialParameter& ks )            { _ks = ks; setBools();}
     void setDiffuse( const MaterialParameter& kd )             { _kd = kd; }
     void setReflective( const MaterialParameter& kr )          { _kr = kr; setBools(); }
     void setTransmissive( const MaterialParameter& kt )        { _kt = kt; setBools(); }
@@ -268,7 +268,8 @@ private:
     MaterialParameter _index;                 // index of refraction
 
 	void setBools() {
-		_refl = !_kr.isZero(); _trans = !_kt.isZero(); _recur = _refl || _trans;
+    printf("!_ks.isZero() %d\n", !_ks.isZero());
+		_refl = !_ks.isZero(); _trans = !_kt.isZero(); _recur = _refl || _trans;
 		_spec = _refl || !_ks.isZero();
 		_both = _refl && _trans;
 	}

@@ -180,16 +180,7 @@ glm::dvec3 SpotLight::samplePoint() const
 	float dx = ((double) rand() / RAND_MAX) - 0.5;
 	float dy = ((double) rand() / RAND_MAX) - 0.5;
 	float dz = ((double) rand() / RAND_MAX) - 0.5;
-	// float y = ((double) rand() / RAND_MAX);
-	// float r2 = ((double) rand() / RAND_MAX);
-    // float sinTheta = sqrtf(1 - y * y);
-    // float phi = 2 * M_PI * r2;
-    // float x = sinTheta * cosf(phi);
-    // float z = sinTheta * sinf(phi);
-	// glm::dvec3 sampleWorld( 
-	// 	x * nb.x + y * n.x + z * nt.x,
-	// 	x * nb.y + y * n.y + z * nt.y,
-	// 	x * nb.z + y * n.z + z * nt.z);
+	// printf("dx %f, dy, %f, dz %f\n", dx, dy, dz);
     return position + glm::dvec3(dx, dy, dz);
 }
 
