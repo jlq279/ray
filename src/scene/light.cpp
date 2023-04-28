@@ -220,6 +220,9 @@ glm::dvec3 SpotLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 					double d = glm::distance(shadow.getPosition(), shadowIntersectPosition);
 					attenuation *= glm::pow(m.kt(shadowIntersect), glm::dvec3(d));
 				}
+				// else {
+				// 	attenuation = glm::dvec3(0.0, 0.0, 0.0);
+				// }
 			}
 			else {
 				attenuation = glm::dvec3(0.0, 0.0, 0.0);

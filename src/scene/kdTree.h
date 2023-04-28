@@ -15,6 +15,10 @@ public:
     KdTree() {}
     KdTree(BoundingBox b) : bound(b) {}
     KdTree(glm::dvec3 bMin, glm::dvec3 bMax) : bound(BoundingBox(bMin, bMax)) {}
+    ~KdTree() {
+        delete left;
+        delete right;
+    }
 	BoundingBox getBound() { return bound; }
 	KdTree* getLeft() { return left; }
 	KdTree* getRight() { return right; }

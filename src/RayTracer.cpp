@@ -153,7 +153,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			}
 
 			// t = t0;
-			colorC += pLight->getColor();
+			colorC += pLight->getColor() * pLight->distanceAttenuation(r.getPosition());
 		}
 	}
 	if(scene->intersect(r, i)) {
@@ -196,7 +196,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			{
 				glm::dvec3 refractionColor(0.0, 0.0, 0.0);
 				// compute fresnel
-				glm::dvec3 ks = FresnelReflectAmount(1.0, m.index(i), leaving? -n : n, rayDirection, m.ks(i));
+				glm::dvec3 ks = m.Spec() ? FresnelReflectAmount(1.0, m.index(i), leaving? -n : n, rayDirection, m.ks(i)) : m.ks(i);
 				// printf("ks %f %f %f\n", ks.r, ks.g, ks.b);
 				
 				createCoordinateSystem(reflect, nt, nb);
