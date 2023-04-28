@@ -137,23 +137,138 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			std::default_random_engine generator;
 			std::uniform_real_distribution<float> distribution(0, 1);
 			glm::dvec3 reflect = glm::dvec3();
+			float eti = 1;
+			float eto = 1;
+
 			if(leaving)
 			{
+				eti = m.index(i);
+				eto = 1;
 				reflect = glm::reflect(rayDirection, -n);
 			}
 			else  
 			{
+				eti = 1;
+				eto = m.index(i);
 				reflect = glm::reflect(rayDirection, n);
 			}
-			if(m.Spec())
+			if (m.Trans())
+			{
+				glm::dvec3 contribution(0.0, 0.0, 0.0);
+				int N = 16;
+				glm::dvec3 reflected = glm::dvec3(0, 0, 0);
+				glm::dvec3 refract = glm::dvec3(0, 0, 0);
+				ray reflectedRay = ray(r);
+				ray refractedRay = ray(r);
+				float reflPort = 0;
+				float refrPort = 1;
+				
+					
+				double eta = eti / eto;
+				
+				double d = glm::distance(rayPosition, intersectPosition);
+				if (leaving)
+				{
+					reflected = glm::reflect(rayDirection, -n);
+					refract = glm::refract(rayDirection, -n, eta);
+				}
+				
+				else
+				{
+					reflected = glm::reflect(rayDirection, n);
+					refract = glm::refract(rayDirection, n, eta);
+				}
+
+				if (refract.x == 0 && refract.y == 0 && refract.z == 0)
+				{
+					reflPort = 1;
+					refrPort = 0;
+				}
+				else
+				{
+					float cosi = glm::clamp(glm::dot(rayDirection, n), (double)-1, (double)1);
+					cosi = fabsf(cosi);
+					float sint = eta * sqrtf(std::max(0.f, 1 - cosi * cosi));
+					float cost = sqrtf(std::max(0.f, 1 - sint * sint));
+					
+					float Rs = ((eti*cosi)-(eto * cost)) / ((eti * cosi)+(eto * cost));
+					float Rp = ((eto * cosi) - (eti*cost)) / ((eto * cosi) + (eti*cost));
+					reflPort = (Rs * Rs + Rp * Rp) / 2;		
+					refrPort = 1 - reflPort;
+				}
+				reflectedRay = ray(intersectPosition + RAY_EPSILON * (-rayDirection), reflect, glm::dvec3(1, 1, 1), ray::REFLECTION);
+				refractedRay = ray(intersectPosition + RAY_EPSILON * rayDirection, refract, glm::dvec3(1, 1, 1), ray::REFRACTION);
+				/*glm::dvec3 refractedColor = traceRay(refractedRay, thresh, depth - 1, t);
+				direct += refractedColor * glm::pow(m.kt(i), glm::dvec3(d));
+				*/
+				std::random_device rd;
+				std::uniform_real_distribution<> dis(0, 1);
+				createCoordinateSystem(refract, nt, nb);
+				int l = 0;
+				/*float r1 = dis(rd) / m.shininess(i);
+				float r2 = dis(rd);
+				glm::dvec3 sample = uniformSampleHemisphere(r1, r2);*/
+				float fudge = m.kr(i).g * N * refrPort;
+				contribution += glm::dvec3(fudge, fudge, fudge) * traceRay(refractedRay, thresh, depth - 1, t);
+				//if(reflPort != 1.f) printf("%f \n", reflPort);
+				if (leaving) contribution *= glm::pow(m.kt(i), glm::dvec3(d));
+				l = N * m.kr(i).g * refrPort;
+				
+				createCoordinateSystem(reflect, nt, nb);
+
+				for (; l < N * m.kr(i).g; ++l)
+				{
+					float r1 = dis(rd) / m.shininess(i);
+					float r2 = dis(rd);
+					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
+					// if(glm::dot(sample, n) < 0)
+					// {
+					// 	sample = sample - 2 * glm::dot(sample, n) * n;
+					// }
+					glm::dvec3 sampleWorld(
+						sample.x * nb.x + sample.y * reflect.x + sample.z * nt.x,
+						sample.x * nb.y + sample.y * reflect.y + sample.z * nt.y,
+						sample.x * nb.z + sample.y * reflect.z + sample.z * nt.z);
+					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1, 1, 1), ray::REFLECTION);
+					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
+					contribution += (traced.x < 0 || traced.y < 0 || traced.z < 0) ? glm::dvec3(0, 0, 0) : traced * m.ks(i);
+
+				}
+				createCoordinateSystem(n, nt, nb);
+				for (; l < N; ++l)
+				{
+					float r1 = dis(rd);
+					float r2 = dis(rd);
+					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
+					glm::dvec3 sampleWorld(
+						sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
+						sample.x * nb.y + sample.y * n.y + sample.z * nt.y,
+						sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
+					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1, 1, 1), ray::REFLECTION);
+					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
+					contribution += glm::dvec3(2 * r1 * traced.r, 2 * r1 * traced.g, 2 * r1 * traced.b) * m.kd(i);
+
+				}
+
+				contribution /= (float)N;
+				indirect += contribution;
+
+				
+				
+			}
+			else if (m.Spec())
 			{
 				createCoordinateSystem(reflect, nt, nb);
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
+				std::random_device rd;
+				std::uniform_real_distribution<> dis(0, 1);
 				uint32_t l = 0;
-				for(; l < N * m.ks(i).r; ++l)
+				float maxv = max(m.ks(i).r, m.ks(i).g);
+				maxv = max(maxv, (float) m.ks(i).b);
+				for(; l < N * m.kr(i).r; ++l)
 				{
-					float r1 = ((double) rand() / RAND_MAX) / m.shininess(i);
-					float r2 = ((double) rand() / RAND_MAX);
+					float r1 = dis(rd) / m.shininess(i);
+					float r2 = dis(rd);
 					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
 					// if(glm::dot(sample, n) < 0)
 					// {
@@ -171,8 +286,8 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				createCoordinateSystem(n, nt, nb);
 				for(; l < N; ++l)
 				{
-					float r1 = ((double) rand() / RAND_MAX);
-					float r2 = ((double) rand() / RAND_MAX);
+					float r1 = dis(rd);
+					float r2 = dis(rd);
 					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
 					glm::dvec3 sampleWorld( 
 						sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
@@ -180,7 +295,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 						sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
 					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
 					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
-					contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b) * m.kd(i);
+					contribution += glm::dvec3(2 * r1 * traced.r, 2 * r1 * traced.g, 2 * r1 * traced.b) * m.kd(i);
 					
 				}
 
@@ -191,9 +306,11 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			{
 				createCoordinateSystem(n, nt, nb);
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
+				std::random_device rd;
+				std::uniform_real_distribution<> dis(0, 1);
 				for (uint32_t i = 0; i < N; ++i) {
-					float r1 = ((double) rand() / RAND_MAX);
-					float r2 = ((double) rand() / RAND_MAX);
+					float r1 = dis(rd);
+					float r2 = dis(rd);
 					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
 					glm::dvec3 sampleWorld( 
 						sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
@@ -201,7 +318,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 						sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
 					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
 					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
-					contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b);
+					contribution += glm::dvec3(2 * r1 * traced.r, 2 * r1 * traced.g, 2 * r1 * traced.b);
 				}
 				contribution /= (float) N;
 				indirect += contribution * m.kd(i);
