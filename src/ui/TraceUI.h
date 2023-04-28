@@ -41,6 +41,8 @@ public:
 	int getLeafSize() const { return m_nLeafSize; }
 	int getFilterWidth() const { return m_nFilterWidth; }
 	double get3dOffset() const { return m_n3dOffset; }
+	int getPathSamples() const { return m_nPathSamples; }
+	int getLightSamples() const { return m_nLightSamples; }
 	int getThreads() const { return m_threads; }
 	bool aaSwitch() const { return m_antiAlias; }
 	bool assAASwitch() const { return m_assAA; }
@@ -111,6 +113,8 @@ protected:
 	int m_nLeafSize = 10;     // target number of objects per leaf
 	int m_nFilterWidth = 1;   // width of cubemap filter
 	double m_n3dOffset = 1;	  // offset of 3d glasses filter
+	int m_nPathSamples = 16;
+	int m_nLightSamples = 16;
 
 	static int rayCount[MAX_THREADS]; // Ray counter
 

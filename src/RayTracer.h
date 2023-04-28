@@ -72,6 +72,8 @@ private:
 	int samples;
 	int rays;
 	double m_3dOffset; 
+	int pathSamples;
+	int lightSamples;
 	std::unique_ptr<Scene> scene;
 	std::vector<std::thread> threads_arr;
 	std::vector<int> threads_indices;

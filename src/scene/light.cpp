@@ -19,6 +19,9 @@ double DirectionalLight::distanceAttenuation(const glm::dvec3& P) const
 	return 1.0;
 }
 
+void DirectionalLight::setLightSamples(int s)
+{
+}
 
 glm::dvec3 DirectionalLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 {
@@ -101,6 +104,10 @@ glm::dvec3 PointLight::getDirection(const glm::dvec3& P) const
 glm::dvec3 PointLight::getPosition() const
 {
 	return position;
+}
+
+void PointLight::setLightSamples(int s)
+{
 }
 
 glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
@@ -193,14 +200,18 @@ glm::dvec3 SpotLight::samplePoint() const
     return position + glm::dvec3(dx, dy, dz);
 }
 
+void SpotLight::setLightSamples(int s)
+{
+	lightSamples = s;
+}
+
 glm::dvec3 SpotLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 {
 	// YOUR CODE HERE:
 	// You should implement shadow-handling code here.
 	glm::dvec3 rayDirection = r.getDirection();
-	uint32_t N = 4;
 	glm::dvec3 shadowAttenuation(0.0, 0.0, 0.0);
-	for (uint32_t i = 0; i < N; ++i) {
+	for (uint32_t i = 0; i < lightSamples; ++i) {
 		glm::dvec3 attenuation = r.getAtten();
 		glm::dvec3 lightPosition = samplePoint();
 		glm::dvec3 directionOfLightFromRayIntersect = glm::normalize(lightPosition - p);
@@ -231,7 +242,7 @@ glm::dvec3 SpotLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 		}
 		shadowAttenuation += attenuation;
 	}
-	shadowAttenuation /= (float) N;
+	shadowAttenuation /= (float) lightSamples;
 	return shadowAttenuation;
 }
 

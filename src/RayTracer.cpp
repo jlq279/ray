@@ -158,7 +158,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			glm::dvec3 nt(0.0, 0.0, 0.0);
 			glm::dvec3 nb(0.0, 0.0, 0.0);
 			float pdf = 1 / (2 * M_PI);
-			uint32_t N = 16;
 			std::default_random_engine generator;
 			std::uniform_real_distribution<float> distribution(0, 1);
 			glm::dvec3 reflect = glm::dvec3();
@@ -175,7 +174,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				createCoordinateSystem(reflect, nt, nb);
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
 				uint32_t l = 0;
-				for(; l < N; ++l)
+				for(; l < pathSamples; ++l)
 				{
 					float r1 = ((double) rand() / RAND_MAX) / m.shininess(i);
 					float r2 = ((double) rand() / RAND_MAX);
@@ -194,7 +193,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					
 				}
 				// createCoordinateSystem(n, nt, nb);
-				// for(; l < N; ++l)
+				// for(; l < pathSamples; ++l)
 				// {
 				// 	float r1 = ((double) rand() / RAND_MAX);
 				// 	float r2 = ((double) rand() / RAND_MAX);
@@ -209,14 +208,14 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					
 				// }
 
-				contribution /= (float)N;
+				contribution /= (float)pathSamples;
 				indirect += contribution;
 			}
 			else
 			{
 				createCoordinateSystem(n, nt, nb);
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
-				for (uint32_t i = 0; i < N; ++i) {
+				for (uint32_t i = 0; i < pathSamples; ++i) {
 					float r1 = ((double) rand() / RAND_MAX);
 					float r2 = ((double) rand() / RAND_MAX);
 					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
@@ -228,7 +227,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
 					contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b);
 				}
-				contribution /= (float) N;
+				contribution /= (float) pathSamples;
 				indirect += contribution * m.kd(i);
 			}
 
@@ -389,7 +388,15 @@ void RayTracer::traceSetup(int w, int h)
 	samples = traceUI->getSuperSamples();
 	aaThresh = traceUI->getAaThreshold();
 	m_3dOffset = traceUI->get3dOffset();
+	pathSamples = traceUI->getPathSamples();
+	lightSamples = traceUI->getLightSamples();
 	
+	for ( const auto& pLight : scene->getAllLights() ) {
+		if (pLight->area())
+		{
+			pLight->setLightSamples(lightSamples);
+		}
+	}
 
 	// YOUR CODE HERE
 	// FIXME: Additional initializations
