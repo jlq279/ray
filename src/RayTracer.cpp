@@ -112,13 +112,25 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 	for ( const auto& pLight : scene->getAllLights() ) {
 		if (pLight->area())
 		{
-			BoundingBox bb(pLight->getPosition() - glm::dvec3(0.5, 0.5, 0.5), pLight->getPosition() + glm::dvec3(0.5, 0.5, 0.5));
-			double tMin;
-			double tMax;
-			if (bb.intersect(r, tMin, tMax))
-			{
-				colorC += pLight->getColor();
+			float t0, t1; // solutions for t if the ray intersects
+			// geometric solution
+			glm::dvec3 L = pLight->getPosition() - r.getPosition();
+			float tca = glm::dot(L, r.getDirection());
+			// if (tca < 0) return false;
+			float d2 = glm::dot(L, L) - tca * tca;
+			if (d2 > 0.5) continue;
+			float thc = sqrt(0.5 - d2);
+			t0 = tca - thc;
+			t1 = tca + thc;
+			if (t0 > t1) std::swap(t0, t1);
+
+			if (t0 < 0) {
+				t0 = t1; // if t0 is negative, let's use t1 instead
+				if (t0 < 0) continue; // both t0 and t1 are negative
 			}
+
+			// t = t0;
+			colorC += pLight->getColor();
 		}
 	}
 	if(scene->intersect(r, i)) {
