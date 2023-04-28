@@ -63,6 +63,9 @@ Scene* Parser::parseScene()
       case POINT_LIGHT:
          scene->add( parsePointLight( scene ) );
          break;
+      case SPOT_LIGHT:
+         scene->add( parseSpotLight( scene ) );
+         break;
       case DIRECTIONAL_LIGHT:
          scene->add( parseDirectionalLight( scene ) );
          break;
@@ -784,6 +787,70 @@ PointLight* Parser::parsePointLight( Scene* scene )
            throw SyntaxErrorException( "Expected: 'position'", _tokenizer );
          _tokenizer.Read( RBRACE );
          return new PointLight( scene, position, color, constantAttenuationCoefficient, 
+           linearAttenuationCoefficient, quadraticAttenuationCoefficient );
+
+        default:
+          throw SyntaxErrorException( 
+			  "expecting 'position' or 'color' attribute, or 'constant_attenuation_coeff', 'linear_attenuation_coeff', or 'quadratic_attenuation_coeff'", 
+            _tokenizer );
+     }
+  }
+}
+
+SpotLight* Parser::parseSpotLight( Scene* scene )
+{
+  glm::dvec3 position;
+  glm::dvec3 color;
+
+
+  // Default to the 'default' system
+  float constantAttenuationCoefficient = 0.0f;
+  float linearAttenuationCoefficient = 0.0f;
+  float quadraticAttenuationCoefficient = 1.0f;
+
+  bool hasPosition( false ), hasColor( false );
+  
+  _tokenizer.Read( SPOT_LIGHT );
+  _tokenizer.Read( LBRACE );
+
+  for( ;; )
+  {
+     const Token* t = _tokenizer.Peek();
+     switch( t->kind() )
+     {
+       case POSITION:
+         if( hasPosition )
+           throw SyntaxErrorException( "Repeated 'position' attribute", _tokenizer );
+         position = parseVec3dExpression();
+         hasPosition = true;
+         break;
+
+       case COLOR:
+         if( hasColor )
+            throw SyntaxErrorException( "Repeated 'color' attribute", _tokenizer );
+         color = parseVec3dExpression();
+         hasColor = true;
+         break;
+
+       case CONSTANT_ATTENUATION_COEFF:
+         constantAttenuationCoefficient = parseScalarExpression();
+		     break;
+
+       case LINEAR_ATTENUATION_COEFF:
+         linearAttenuationCoefficient = parseScalarExpression();
+		     break;
+         
+       case QUADRATIC_ATTENUATION_COEFF:
+         quadraticAttenuationCoefficient = parseScalarExpression();
+		     break;
+
+       case RBRACE:
+         if( !hasColor )
+           throw SyntaxErrorException( "Expected: 'color'", _tokenizer );
+         if( !hasPosition )
+           throw SyntaxErrorException( "Expected: 'position'", _tokenizer );
+         _tokenizer.Read( RBRACE );
+         return new SpotLight( scene, position, color, constantAttenuationCoefficient, 
            linearAttenuationCoefficient, quadraticAttenuationCoefficient );
 
         default:

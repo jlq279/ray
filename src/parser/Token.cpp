@@ -46,6 +46,7 @@ string getNameForToken( const SYMBOL kind )
     tokenNames[ CAMERA ]            = "camera";
 	tokenNames[ AMBIENT_LIGHT ]     = "ambient_light";
     tokenNames[ POINT_LIGHT ]       = "point_light";
+    tokenNames[ SPOT_LIGHT ]       = "spot_light";
     tokenNames[ DIRECTIONAL_LIGHT ] = "directional_light";
     tokenNames[ CONSTANT_ATTENUATION_COEFF ] = "constant_attenuation_coeff";
     tokenNames[ LINEAR_ATTENUATION_COEFF ] = "linear_attenuation_coeff";
@@ -144,6 +145,7 @@ SYMBOL lookupReservedWord(const string& ident) {
     reservedWords["name"] = NAME;
     reservedWords["normals"] = NORMALS;
     reservedWords["point_light"] = POINT_LIGHT;
+    reservedWords["spot_light"] = SPOT_LIGHT;
     reservedWords["points"] = POLYPOINTS;
     reservedWords["polymesh"] = TRIMESH;
     reservedWords["position"] = POSITION;

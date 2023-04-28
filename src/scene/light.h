@@ -15,10 +15,12 @@ class Light
 	: public SceneElement
 {
 public:
+	virtual bool area() const = 0;
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const = 0;
 	virtual double distanceAttenuation(const glm::dvec3& P) const = 0;
 	virtual glm::dvec3 getColor() const = 0;
 	virtual glm::dvec3 getDirection (const glm::dvec3& P) const = 0;
+	virtual glm::dvec3 getPosition() const = 0;
 
 
 protected:
@@ -37,10 +39,12 @@ class DirectionalLight
 public:
 	DirectionalLight(Scene *scene, const glm::dvec3& orien, const glm::dvec3& color)
 		: Light(scene, color), orientation(glm::normalize(orien)) { }
+	virtual bool area() const;
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
 	virtual double distanceAttenuation(const glm::dvec3& P) const;
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+	virtual glm::dvec3 getPosition() const;
 
 protected:
 	glm::dvec3 		orientation;
@@ -63,10 +67,12 @@ public:
 		quadraticTerm(quadraticAttenuationTerm) 
 		{}
 
+	virtual bool area() const;
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
 	virtual double distanceAttenuation(const glm::dvec3& P) const;
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+	virtual glm::dvec3 getPosition() const;
 
 	void setAttenuationConstants(float a, float b, float c)
 	{
@@ -104,13 +110,16 @@ public:
 		: Light( scene, color ), position( pos ),
 		constantTerm(constantAttenuationTerm), 
 		linearTerm(linearAttenuationTerm),
-		quadraticTerm(quadraticAttenuationTerm) 
-		{}
-	virtual glm::dvec3 samplePoint(const glm::dvec3& upDir) const;
+		quadraticTerm(quadraticAttenuationTerm)
+		{
+		}
+	virtual bool area() const;
+	virtual glm::dvec3 samplePoint() const;
 	virtual glm::dvec3 shadowAttenuation(const ray& r, const glm::dvec3& pos) const;
 	virtual double distanceAttenuation(const glm::dvec3& P) const;
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
+	virtual glm::dvec3 getPosition() const;
 
 	void setAttenuationConstants(float a, float b, float c)
 	{
@@ -121,7 +130,6 @@ public:
 
 protected:
 	glm::dvec3 position;
-
 	// These three values are the a, b, and c in the distance
 	// attenuation function (from the slide labelled 
 	// "Intensity drop-off with distance"):

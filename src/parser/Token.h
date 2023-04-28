@@ -43,6 +43,7 @@ enum SYMBOL {
 
   CAMERA,					// camera primitive
   POINT_LIGHT,				// lights
+  SPOT_LIGHT,	
   DIRECTIONAL_LIGHT,
   AMBIENT_LIGHT,
 

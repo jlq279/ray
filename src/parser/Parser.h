@@ -61,6 +61,7 @@ private:
 
     // Parse lights
 	PointLight* parsePointLight( Scene* scene );
+  SpotLight* parseSpotLight( Scene* scene );
 	DirectionalLight* parseDirectionalLight( Scene* scene );
 	void parseAmbientLight( Scene* scene );
 

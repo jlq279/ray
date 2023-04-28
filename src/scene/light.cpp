@@ -8,6 +8,10 @@
 
 using namespace std;
 
+bool DirectionalLight::area() const {
+	return false;
+}
+
 double DirectionalLight::distanceAttenuation(const glm::dvec3& P) const
 {
 	// distance to light is infinite, so f(di) goes to 0.  Return 1.
@@ -60,6 +64,14 @@ glm::dvec3 DirectionalLight::getDirection(const glm::dvec3& P) const
 	return -orientation;
 }
 
+glm::dvec3 DirectionalLight::getPosition() const {
+	return glm::dvec3();
+}
+
+bool PointLight::area() const {
+	return false;
+}
+
 double PointLight::distanceAttenuation(const glm::dvec3& P) const
 {
 
@@ -86,17 +98,9 @@ glm::dvec3 PointLight::getDirection(const glm::dvec3& P) const
 	return glm::normalize(position - P);
 }
 
-glm::dvec3 sampleShadow()
+glm::dvec3 PointLight::getPosition() const
 {
-    // cos(theta) = r1 = y
-    // cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
-	float r1 = ((double) rand() / RAND_MAX);
-	float r2 = ((double) rand() / RAND_MAX);
-    float sinTheta = sqrtf(1 - r1 * r1);
-    float phi = 2 * M_PI * r2;
-    float x = sinTheta * cosf(phi);
-    float z = sinTheta * sinf(phi);
-    return glm::dvec3(x * 0.5, r1 * 0.5, z * 0.5);
+	return position;
 }
 
 glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
@@ -134,6 +138,10 @@ glm::dvec3 PointLight::shadowAttenuation(const ray& r, const glm::dvec3& p) cons
 	return attenuation;
 }
 
+bool SpotLight::area() const {
+	return true;
+}
+
 double SpotLight::distanceAttenuation(const glm::dvec3& P) const
 {
 
@@ -160,17 +168,29 @@ glm::dvec3 SpotLight::getDirection(const glm::dvec3& P) const
 	return glm::normalize(position - P);
 }
 
-glm::dvec3 samplePoint()
+glm::dvec3 SpotLight::getPosition() const
+{
+	return position;
+}
+
+glm::dvec3 SpotLight::samplePoint() const
 {
     // cos(theta) = r1 = y
     // cos^2(theta) + sin^2(theta) = 1 -> sin(theta) = srtf(1 - cos^2(theta))
-	float r1 = ((double) rand() / RAND_MAX);
-	float r2 = ((double) rand() / RAND_MAX);
-    float sinTheta = sqrtf(1 - r1 * r1);
-    float phi = 2 * M_PI * r2;
-    float x = sinTheta * cosf(phi);
-    float z = sinTheta * sinf(phi);
-    return glm::dvec3(x * 0.5, r1 * 0.5, z * 0.5);
+	float dx = ((double) rand() / RAND_MAX) - 0.5;
+	float dy = ((double) rand() / RAND_MAX) - 0.5;
+	float dz = ((double) rand() / RAND_MAX) - 0.5;
+	// float y = ((double) rand() / RAND_MAX);
+	// float r2 = ((double) rand() / RAND_MAX);
+    // float sinTheta = sqrtf(1 - y * y);
+    // float phi = 2 * M_PI * r2;
+    // float x = sinTheta * cosf(phi);
+    // float z = sinTheta * sinf(phi);
+	// glm::dvec3 sampleWorld( 
+	// 	x * nb.x + y * n.x + z * nt.x,
+	// 	x * nb.y + y * n.y + z * nt.y,
+	// 	x * nb.z + y * n.z + z * nt.z);
+    return position + glm::dvec3(dx, dy, dz);
 }
 
 glm::dvec3 SpotLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
@@ -178,17 +198,17 @@ glm::dvec3 SpotLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 	// YOUR CODE HERE:
 	// You should implement shadow-handling code here.
 	glm::dvec3 rayDirection = r.getDirection();
-	uint32_t N = 16;
+	uint32_t N = 4;
 	glm::dvec3 shadowAttenuation(0.0, 0.0, 0.0);
 	for (uint32_t i = 0; i < N; ++i) {
 		glm::dvec3 attenuation = r.getAtten();
-		glm::dvec3 lightPosition = position + sampleShadow();
+		glm::dvec3 lightPosition = samplePoint();
 		glm::dvec3 directionOfLightFromRayIntersect = glm::normalize(lightPosition - p);
 		ray shadow(p + RAY_EPSILON * (-rayDirection), directionOfLightFromRayIntersect, glm::dvec3(1,1,1), ray::SHADOW);
 		isect shadowIntersect;
 		bool intersect = scene->intersect(shadow, shadowIntersect);
 		glm::dvec3 shadowIntersectPosition = shadow.at(shadowIntersect);
-		glm::dvec3 directionOfLightFromShadowIntersect = getDirection(shadowIntersectPosition);
+		glm::dvec3 directionOfLightFromShadowIntersect = glm::normalize(lightPosition - shadowIntersectPosition);
 		bool in_front_of_light = glm::dot(directionOfLightFromShadowIntersect, directionOfLightFromRayIntersect) > 0;
 		while (intersect && in_front_of_light) {
 			Material m = shadowIntersect.getMaterial();
@@ -203,15 +223,16 @@ glm::dvec3 SpotLight::shadowAttenuation(const ray& r, const glm::dvec3& p) const
 				attenuation = glm::dvec3(0.0, 0.0, 0.0);
 				break;
 			}
-			in_front_of_light = glm::dot(getDirection(shadowIntersectPosition), directionOfLightFromShadowIntersect) > 0;
-			directionOfLightFromShadowIntersect = getDirection(shadowIntersectPosition);
+			in_front_of_light = glm::dot(glm::normalize(lightPosition - shadowIntersectPosition), directionOfLightFromShadowIntersect) > 0;
+			directionOfLightFromShadowIntersect = glm::normalize(lightPosition - shadowIntersectPosition);
 			shadow = ray(shadowIntersectPosition + RAY_EPSILON * directionOfLightFromShadowIntersect, directionOfLightFromShadowIntersect, glm::dvec3(1,1,1), ray::SHADOW);
 			intersect = scene->intersect(shadow, shadowIntersect);
 			shadowIntersectPosition = shadow.at(shadowIntersect);
 		}
 		shadowAttenuation += attenuation;
 	}
-	return glm::dvec3(shadowAttenuation.x/N, shadowAttenuation.y/N, shadowAttenuation.z/N);
+	shadowAttenuation /= (float) N;
+	return shadowAttenuation;
 }
 
 #define VERBOSE 0

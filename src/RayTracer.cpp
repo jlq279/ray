@@ -108,6 +108,19 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 #if VERBOSE
 	std::cerr << "== current depth: " << depth << std::endl;
 #endif
+	colorC = glm::dvec3(0.0, 0.0, 0.0);
+	for ( const auto& pLight : scene->getAllLights() ) {
+		if (pLight->area())
+		{
+			BoundingBox bb(pLight->getPosition() - glm::dvec3(0.5, 0.5, 0.5), pLight->getPosition() + glm::dvec3(0.5, 0.5, 0.5));
+			double tMin;
+			double tMax;
+			if (bb.intersect(r, tMin, tMax))
+			{
+				colorC += pLight->getColor();
+			}
+		}
+	}
 	if(scene->intersect(r, i)) {
 		// YOUR CODE HERE
 
@@ -150,7 +163,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				createCoordinateSystem(reflect, nt, nb);
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
 				uint32_t l = 0;
-				for(; l < N * m.ks(i).r; ++l)
+				for(; l < N; ++l)
 				{
 					float r1 = ((double) rand() / RAND_MAX) / m.shininess(i);
 					float r2 = ((double) rand() / RAND_MAX);
@@ -168,21 +181,21 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					contribution += (traced.x < 0 || traced.y < 0 || traced.z < 0)?glm::dvec3(0, 0, 0) : traced * m.ks(i);
 					
 				}
-				createCoordinateSystem(n, nt, nb);
-				for(; l < N; ++l)
-				{
-					float r1 = ((double) rand() / RAND_MAX);
-					float r2 = ((double) rand() / RAND_MAX);
-					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
-					glm::dvec3 sampleWorld( 
-						sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
-						sample.x * nb.y + sample.y * n.y + sample.z * nt.y,
-						sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
-					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
-					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
-					contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b) * m.kd(i);
+				// createCoordinateSystem(n, nt, nb);
+				// for(; l < N; ++l)
+				// {
+				// 	float r1 = ((double) rand() / RAND_MAX);
+				// 	float r2 = ((double) rand() / RAND_MAX);
+				// 	glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
+				// 	glm::dvec3 sampleWorld( 
+				// 		sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
+				// 		sample.x * nb.y + sample.y * n.y + sample.z * nt.y,
+				// 		sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
+				// 	ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
+				// 	glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
+				// 	contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b) * m.kd(i);
 					
-				}
+				// }
 
 				contribution /= (float)N;
 				indirect += contribution;
@@ -252,7 +265,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			// }
 
 		}
-		colorC = m.ke(i) + direct * m.kd(i) + indirect;
+		colorC += m.ke(i) + direct * m.kd(i) + indirect;
 	} else {
 		// No intersection.  This ray travels to infinity, so we color
 		// it according to the background color, which in this (simple) case
@@ -265,10 +278,10 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 		// printf("cube\n");
 		if (traceUI->cubeMap()) {
 			auto cubeMap = traceUI->getCubeMap();
-			colorC = cubeMap->getColor(r);
+			colorC += cubeMap->getColor(r);
 		}
 		else {
-			colorC = glm::dvec3(0.0, 0.0, 0.0);
+			colorC += glm::dvec3(0.0, 0.0, 0.0);
 		}
 	}
 #if VERBOSE
