@@ -181,7 +181,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			glm::dvec3 nt(0.0, 0.0, 0.0);
 			glm::dvec3 nb(0.0, 0.0, 0.0);
 			float pdf = 1 / (2 * M_PI);
-			uint32_t N = 16;
 			std::default_random_engine generator;
 			std::uniform_real_distribution<float> distribution(0, 1);
 			glm::dvec3 reflect = glm::dvec3();
@@ -204,7 +203,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
 				uint32_t l = 0;
 				float maxKs = glm::max(glm::max(ks.x,ks.y), ks.z);
-				int reflectionRays = std::round(N * maxKs);
+				int reflectionRays = std::round(pathSamples * maxKs);
 				// printf("%d reflection rays\n", reflectionRays);
 				for(; l < reflectionRays; ++l)
 				{
@@ -224,7 +223,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
 					contribution += (traced.x < 0 || traced.y < 0 || traced.z < 0)?glm::dvec3(0, 0, 0) : traced;
 				}
-				int refractionRays = std::round(N * (1 - maxKs) / (1 - glm::max(glm::max(m.ks(i).x,m.ks(i).y), m.ks(i).z)) * glm::max(glm::max(m.kt(i).x,m.kt(i).y), m.kt(i).z));
+				int refractionRays = std::round(pathSamples * (1 - maxKs) / (1 - glm::max(glm::max(m.ks(i).x,m.ks(i).y), m.ks(i).z)) * glm::max(glm::max(m.kt(i).x,m.kt(i).y), m.kt(i).z));
 				// printf("%d refraction rays\n", refractionRays);
 				for(; l < reflectionRays + refractionRays; ++l)
 				{
@@ -265,7 +264,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					}
 					// refractionColor = traceRay(refraction, thresh, depth - 1, t);
 				}
-				for(; l < N; ++l)
+				for(; l < pathSamples; ++l)
 				{
 					// printf("diffuse ray\n");
 					float r1 = ((double) rand() / RAND_MAX);
@@ -280,7 +279,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b) * m.kd(i);
 					
 				}
-				contribution /= (float) N;
+				contribution /= (float) pathSamples;
 				indirect += contribution;
 			}
 			// else if(m.Spec())
@@ -288,7 +287,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			// 	createCoordinateSystem(reflect, nt, nb);
 			// 	glm::dvec3 contribution(0.0, 0.0, 0.0);
 			// 	uint32_t l = 0;
-			// 	for(; l < N * glm::max(glm::max(m.ks(i).x, m.ks(i).y), m.ks(i).z); ++l)
+			// 	for(; l < pathSamples * glm::max(glm::max(m.ks(i).x, m.ks(i).y), m.ks(i).z); ++l)
 			// 	{
 			// 		float r1 = ((double) rand() / RAND_MAX) * (1 - m.shininess(i));
 			// 		float r2 = ((double) rand() / RAND_MAX);
@@ -307,7 +306,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					
 			// 	}
 			// 	createCoordinateSystem(n, nt, nb);
-			// 	for(; l < N; ++l)
+			// 	for(; l < pathSamples; ++l)
 			// 	{
 			// 		float r1 = ((double) rand() / RAND_MAX);
 			// 		float r2 = ((double) rand() / RAND_MAX);
@@ -322,7 +321,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					
 			// 	}
 
-			// 	contribution /= (float)N;
+			// 	contribution /= (float)pathSamples;
 			// 	indirect += contribution;
 			// }
 			else
@@ -330,7 +329,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				// printf("only diffuse\n");
 				createCoordinateSystem(n, nt, nb);
 				glm::dvec3 contribution(0.0, 0.0, 0.0);
-				for (uint32_t i = 0; i < N; ++i) {
+				for (uint32_t i = 0; i < pathSamples; ++i) {
 					float r1 = ((double) rand() / RAND_MAX);
 					float r2 = ((double) rand() / RAND_MAX);
 					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
@@ -342,7 +341,7 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
 					contribution += glm::dvec3(2 * r1 * traced.r, 2 * r1 * traced.g, 2 * r1 * traced.b);
 				}
-				contribution /= (float) N;
+				contribution /= (float) pathSamples;
 				indirect += contribution * m.kd(i);
 			}
 
@@ -503,7 +502,15 @@ void RayTracer::traceSetup(int w, int h)
 	samples = traceUI->getSuperSamples();
 	aaThresh = traceUI->getAaThreshold();
 	m_3dOffset = traceUI->get3dOffset();
+	pathSamples = traceUI->getPathSamples();
+	lightSamples = traceUI->getLightSamples();
 	
+	for ( const auto& pLight : scene->getAllLights() ) {
+		if (pLight->area())
+		{
+			pLight->setLightSamples(lightSamples);
+		}
+	}
 
 	// YOUR CODE HERE
 	// FIXME: Additional initializations

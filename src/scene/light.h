@@ -21,6 +21,7 @@ public:
 	virtual glm::dvec3 getColor() const = 0;
 	virtual glm::dvec3 getDirection (const glm::dvec3& P) const = 0;
 	virtual glm::dvec3 getPosition() const = 0;
+	virtual void setLightSamples(int s) = 0;
 
 
 protected:
@@ -45,6 +46,7 @@ public:
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
 	virtual glm::dvec3 getPosition() const;
+	virtual void setLightSamples(int s);
 
 protected:
 	glm::dvec3 		orientation;
@@ -73,6 +75,7 @@ public:
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
 	virtual glm::dvec3 getPosition() const;
+	virtual void setLightSamples(int s);
 
 	void setAttenuationConstants(float a, float b, float c)
 	{
@@ -120,6 +123,7 @@ public:
 	virtual glm::dvec3 getColor() const;
 	virtual glm::dvec3 getDirection(const glm::dvec3& P) const;
 	virtual glm::dvec3 getPosition() const;
+	virtual void setLightSamples(int s);
 
 	void setAttenuationConstants(float a, float b, float c)
 	{
@@ -137,6 +141,7 @@ protected:
 	float constantTerm;		// a
 	float linearTerm;		// b
 	float quadraticTerm;	// c
+	int lightSamples;
 
 public:
 	void glDraw(GLenum lightID) const;

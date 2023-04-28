@@ -268,7 +268,6 @@ private:
     MaterialParameter _index;                 // index of refraction
 
 	void setBools() {
-    printf("!_ks.isZero() %d\n", !_ks.isZero());
 		_refl = !_ks.isZero(); _trans = !_kt.isZero(); _recur = _refl || _trans;
 		_spec = _refl || !_ks.isZero();
 		_both = _refl && _trans;

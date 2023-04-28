@@ -193,6 +193,18 @@ void GraphicalUI::cb_3dSlides(Fl_Widget* o, void* v)
 	pUI->m_n3dOffset= ((Fl_Slider *)o)->value() ;
 }
 
+void GraphicalUI::cb_pathSamplesSlides(Fl_Widget* o, void* v)
+{
+	pUI=(GraphicalUI*)(o->user_data());
+	pUI->m_nPathSamples= ((Fl_Slider *)o)->value() ;
+}
+
+void GraphicalUI::cb_lightSamplesSlides(Fl_Widget* o, void* v)
+{
+	pUI=(GraphicalUI*)(o->user_data());
+	pUI->m_nLightSamples= ((Fl_Slider *)o)->value() ;
+}
+
 void GraphicalUI::cb_debuggingDisplayCheckButton(Fl_Widget* o, void* v)
 {
 	pUI=(GraphicalUI*)(o->user_data());
@@ -481,7 +493,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	// init.
 	m_threads = std::max(std::thread::hardware_concurrency(), (unsigned) 1);
 
-	m_mainWindow = new Fl_Window(100, 40, 450, 499, "Ray <Not Loaded>");
+	m_mainWindow = new Fl_Window(100, 40, 450, 549, "Ray <Not Loaded>");
 	m_mainWindow->user_data((void*)(this));	// record self to be used by static callback functions
 	// install menu bar
 	m_menubar = new Fl_Menu_Bar(0, 0, 440, 25);
@@ -575,8 +587,32 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	m_refreshSlider->align(FL_ALIGN_RIGHT);
 	m_refreshSlider->callback(cb_threadSlides);
 
+	m_pathSamplesSlider = new Fl_Value_Slider(10, 190, 180, 20, "Path Samples");
+	m_pathSamplesSlider->user_data((void*)(this));	// record self to be used by static callback functions
+	m_pathSamplesSlider->type(FL_HOR_NICE_SLIDER);
+	m_pathSamplesSlider->labelfont(FL_COURIER);
+	m_pathSamplesSlider->labelsize(12);
+	m_pathSamplesSlider->minimum(4);
+	m_pathSamplesSlider->maximum(256);
+	m_pathSamplesSlider->step(4);
+	m_pathSamplesSlider->value(m_nPathSamples);
+	m_pathSamplesSlider->align(FL_ALIGN_RIGHT);
+	m_pathSamplesSlider->callback(cb_pathSamplesSlides);
+
+	m_lightSamplesSlider = new Fl_Value_Slider(10, 215, 180, 20, "Light Samples");
+	m_lightSamplesSlider->user_data((void*)(this));	// record self to be used by static callback functions
+	m_lightSamplesSlider->type(FL_HOR_NICE_SLIDER);
+	m_lightSamplesSlider->labelfont(FL_COURIER);
+	m_lightSamplesSlider->labelsize(12);
+	m_lightSamplesSlider->minimum(4);
+	m_lightSamplesSlider->maximum(256);
+	m_lightSamplesSlider->step(4);
+	m_lightSamplesSlider->value(m_nLightSamples);
+	m_lightSamplesSlider->align(FL_ALIGN_RIGHT);
+	m_lightSamplesSlider->callback(cb_lightSamplesSlides);
+
 	// install aasamples slider
-	m_aaSamplesSlider = new Fl_Value_Slider(95, 205, 180, 20, "Pixel Samples\non Each Direction");
+	m_aaSamplesSlider = new Fl_Value_Slider(95, 255, 180, 20, "Pixel Samples\non Each Direction");
 	m_aaSamplesSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_aaSamplesSlider->type(FL_HOR_NICE_SLIDER);
 	m_aaSamplesSlider->labelfont(FL_COURIER);
@@ -590,7 +626,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	if (!m_antiAlias) m_aaSamplesSlider->deactivate();
 
 	// install aathreshold slider
-	m_aaThreshSlider = new Fl_Value_Slider(95, 237, 180, 20, "Supersample\nThreshold (x 0.001)");
+	m_aaThreshSlider = new Fl_Value_Slider(95, 287, 180, 20, "Supersample\nThreshold (x 0.001)");
 	m_aaThreshSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_aaThreshSlider->type(FL_HOR_NICE_SLIDER);
 	m_aaThreshSlider->labelfont(FL_COURIER);
@@ -604,20 +640,20 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	if (!m_antiAlias) m_aaThreshSlider->deactivate();
 
 	// set up antialias checkbox
-	m_aaCheckButton = new Fl_Check_Button(10, 221, 75, 20, "Antialias");
+	m_aaCheckButton = new Fl_Check_Button(10, 271, 75, 20, "Antialias");
 	m_aaCheckButton->user_data((void*)(this));
 	m_aaCheckButton->callback(cb_aaCheckButton);
 	m_aaCheckButton->value(m_antiAlias);
 
 	// set up antialias checkbox
-	m_assAACheckButton = new Fl_Check_Button(10, 235, 75, 20, "Adaptive");
+	m_assAACheckButton = new Fl_Check_Button(10, 285, 75, 20, "Adaptive");
 	m_assAACheckButton->user_data((void*)(this));
 	m_assAACheckButton->callback(cb_assAACheckButton);
 	m_assAACheckButton->value(m_assAA);
 	if (!m_antiAlias) m_assAACheckButton->deactivate();
 
 	// install kdmaxdepth slider
-	m_treeDepthSlider = new Fl_Value_Slider(95, 277, 180, 20, "Max Depth");
+	m_treeDepthSlider = new Fl_Value_Slider(95, 327, 180, 20, "Max Depth");
 	m_treeDepthSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_treeDepthSlider->type(FL_HOR_NICE_SLIDER);
 	m_treeDepthSlider->labelfont(FL_COURIER);
@@ -631,7 +667,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	if (!m_kdTree) m_treeDepthSlider->deactivate();
 
 	// install kdleafsize slider
-	m_leafSizeSlider = new Fl_Value_Slider(95, 309, 180, 20, "Target Leaf Size");
+	m_leafSizeSlider = new Fl_Value_Slider(95, 359, 180, 20, "Target Leaf Size");
 	m_leafSizeSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_leafSizeSlider->type(FL_HOR_NICE_SLIDER);
 	m_leafSizeSlider->labelfont(FL_COURIER);
@@ -645,7 +681,7 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	if (!m_kdTree) m_leafSizeSlider->deactivate();
 
 	// install cubemap filter width slider
-	m_filterSlider = new Fl_Value_Slider(95, 349, 180, 20, "Filter Width");
+	m_filterSlider = new Fl_Value_Slider(95, 399, 180, 20, "Filter Width");
 	m_filterSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_filterSlider->type(FL_HOR_NICE_SLIDER);
 	m_filterSlider->labelfont(FL_COURIER);
@@ -659,13 +695,13 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	if (!m_usingCubeMap) m_filterSlider->deactivate();
 
 	// set up 3d glasses checkbox
-	m_3dCheckButton = new Fl_Check_Button(10, 389, 110, 20, "3D");
+	m_3dCheckButton = new Fl_Check_Button(10, 439, 110, 20, "3D");
 	m_3dCheckButton->user_data((void*)(this));
 	m_3dCheckButton->callback(cb_3dCheckButton);
 	m_3dCheckButton->value(m_3d);
 
 	// install 3d glasses offset slider
-	m_3dSlider = new Fl_Value_Slider(95, 389, 180, 20, "3D Glasses Offset");
+	m_3dSlider = new Fl_Value_Slider(95, 439, 180, 20, "3D Glasses Offset");
 	m_3dSlider->user_data((void*)(this));	// record self to be used by static callback functions
 	m_3dSlider->type(FL_HOR_NICE_SLIDER);
 	m_3dSlider->labelfont(FL_COURIER);
@@ -679,13 +715,13 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	if (!m_3d) m_3dSlider->deactivate();
 
 	// set up kdTree checkbox
-	m_kdCheckButton = new Fl_Check_Button(10, 293, 80, 20, "K-d Tree");
+	m_kdCheckButton = new Fl_Check_Button(10, 343, 80, 20, "K-d Tree");
 	m_kdCheckButton->user_data((void*)(this));
 	m_kdCheckButton->callback(cb_kdCheckButton);
 	m_kdCheckButton->value(m_kdTree);
 
 	// set up cubeMap checkbox
-	m_cubeMapCheckButton = new Fl_Check_Button(10, 349, 80, 20, "CubeMap");
+	m_cubeMapCheckButton = new Fl_Check_Button(10, 399, 80, 20, "CubeMap");
 	m_cubeMapCheckButton->user_data((void*)(this));
 	m_cubeMapCheckButton->callback(cb_cubeMapCheckButton);
 	m_cubeMapCheckButton->value(m_usingCubeMap);
@@ -694,25 +730,25 @@ GraphicalUI::GraphicalUI() : refreshInterval(10) {
 	else m_cubeMapCheckButton->deactivate();
 
 	// set up smoothshade checkbox
-	m_ssCheckButton = new Fl_Check_Button(10, 439, 110, 20, "Smoothshade");
+	m_ssCheckButton = new Fl_Check_Button(10, 489, 110, 20, "Smoothshade");
 	m_ssCheckButton->user_data((void*)(this));
 	m_ssCheckButton->callback(cb_ssCheckButton);
 	m_ssCheckButton->value(m_smoothshade);
 
 	// set up shadows checkbox
-	m_shCheckButton = new Fl_Check_Button(140, 439, 80, 20, "Shadows");
+	m_shCheckButton = new Fl_Check_Button(140, 489, 80, 20, "Shadows");
 	m_shCheckButton->user_data((void*)(this));
 	m_shCheckButton->callback(cb_shCheckButton);
 	m_shCheckButton->value(m_shadows);
 
 	// set up backfacing checkbox
-	m_bfCheckButton = new Fl_Check_Button(240, 439, 110, 20, "Backface Cull");
+	m_bfCheckButton = new Fl_Check_Button(240, 489, 110, 20, "Backface Cull");
 	m_bfCheckButton->user_data((void*)(this));
 	m_bfCheckButton->callback(cb_bfCheckButton);
 	m_bfCheckButton->value(m_backface);
 
 	// set up debugging display checkbox
-	m_debuggingDisplayCheckButton = new Fl_Check_Button(10, 459, 140, 20, "Debugging display");
+	m_debuggingDisplayCheckButton = new Fl_Check_Button(10, 509, 140, 20, "Debugging display");
 	m_debuggingDisplayCheckButton->user_data((void*)(this));
 	m_debuggingDisplayCheckButton->callback(cb_debuggingDisplayCheckButton);
 	m_debuggingDisplayCheckButton->value(m_displayDebuggingInfo);
