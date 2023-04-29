@@ -192,11 +192,12 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			{
 				reflect = glm::reflect(rayDirection, n);
 			}
-			if (m.Recur())
+			if (m.Both() || m.kr(i).r == 1)
 			{
 				glm::dvec3 refractionColor(0.0, 0.0, 0.0);
 				// compute fresnel
-				glm::dvec3 ks = m.Spec() ? FresnelReflectAmount(1.0, m.index(i), leaving? -n : n, rayDirection, m.ks(i)) : m.ks(i);
+				// r - reflectiveness, g - diffuseness in fresnel, b - glossy?
+				glm::dvec3 ks = FresnelReflectAmount(1.0, m.index(i), leaving? -n : n, rayDirection, m.ks(i));
 				// printf("ks %f %f %f\n", ks.r, ks.g, ks.b);
 				
 				createCoordinateSystem(reflect, nt, nb);
@@ -223,14 +224,11 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
 					contribution += (traced.x < 0 || traced.y < 0 || traced.z < 0)?glm::dvec3(0, 0, 0) : traced;
 				}
-				int refractionRays = std::round(pathSamples * (1 - maxKs) / (1 - glm::max(glm::max(m.ks(i).x,m.ks(i).y), m.ks(i).z)) * glm::max(glm::max(m.kt(i).x,m.kt(i).y), m.kt(i).z));
+				// int refractionRays = std::round(pathSamples * (1 - maxKs) / (1 - glm::max(glm::max(m.ks(i).x,m.ks(i).y), m.ks(i).z)) * glm::max(glm::max(m.kt(i).x,m.kt(i).y), m.kt(i).z));
 				// printf("%d refraction rays\n", refractionRays);
-				for(; l < reflectionRays + refractionRays; ++l)
+				if (m.kr(i).r == 0)
 				{
-					// printf("refraction ray\n");
-					// glm::dvec3 refractionDirection = glm::normalize(glm::refract(r.getDirection(), n, m.index(i)));
-					// glm::dvec3 refractionRayOrig = leaving ? intersectPosition + bias : intersectPosition - bias;
-					// ray refraction(refractionRayOrig, refractionDirection, glm::dvec3(1.0, 1.0, 1.0), ray::REFRACTION);
+					glm::dvec3 refractedContribution(0.0, 0.0, 0.0);
 					if (leaving) {
 						double eta = m.index(i);
 						double d = glm::distance(rayPosition, intersectPosition);
@@ -238,13 +236,12 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 						if (refract.x == 0 && refract.y == 0 && refract.z == 0) {
 							glm::dvec3 reflect = glm::reflect(rayDirection, -n);
 							ray reflectedRay(intersectPosition + RAY_EPSILON * (-rayDirection), reflect, glm::dvec3(1.0, 1.0, 1.0), ray::REFLECTION);
-							glm::dvec3 reflectedColor = traceRay(reflectedRay, thresh, depth - 1, t);
-							contribution += reflectedColor;
+							refractedContribution = traceRay(reflectedRay, thresh, depth - 1, t);
 						}
 						else {
 							ray refractedRay(intersectPosition + RAY_EPSILON * rayDirection, refract, glm::dvec3(1.0, 1.0, 1.0), ray::REFRACTION);
 							glm::dvec3 refractedColor = traceRay(refractedRay, thresh, depth - 1, t);
-							contribution += refractedColor * glm::pow(m.kt(i), glm::dvec3(d));
+							refractedContribution = refractedColor * glm::pow(m.kt(i), glm::dvec3(d));
 						}
 					}
 					else {
@@ -254,15 +251,69 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 							glm::dvec3 reflect = glm::reflect(rayDirection, n);
 							ray reflectedRay(intersectPosition + RAY_EPSILON * (-rayDirection), reflect, glm::dvec3(1.0, 1.0, 1.0), ray::REFLECTION);
 							glm::dvec3 reflectedColor = traceRay(reflectedRay, thresh, depth - 1, t);
-							contribution += reflectedColor;
+							refractedContribution = reflectedColor;
 						}
 						else {
 							ray refractedRay(intersectPosition + RAY_EPSILON * rayDirection, refract, glm::dvec3(1.0, 1.0, 1.0), ray::REFRACTION);
 							glm::dvec3 refractedColor = traceRay(refractedRay, thresh, depth - 1, t);
-							contribution += refractedColor;
+							refractedContribution = refractedColor;
 						}
 					}
-					// refractionColor = traceRay(refraction, thresh, depth - 1, t);
+					for(; l < pathSamples; ++l)
+					{
+						// printf("refraction ray\n");
+						// glm::dvec3 refractionDirection = glm::normalize(glm::refract(r.getDirection(), n, m.index(i)));
+						// glm::dvec3 refractionRayOrig = leaving ? intersectPosition + bias : intersectPosition - bias;
+						// ray refraction(refractionRayOrig, refractionDirection, glm::dvec3(1.0, 1.0, 1.0), ray::REFRACTION);
+						contribution += refractedContribution;
+						// refractionColor = traceRay(refraction, thresh, depth - 1, t);
+					}
+				}
+				else {
+					for(; l < pathSamples; ++l)
+					{
+						// printf("diffuse ray\n");
+						float r1 = ((double) rand() / RAND_MAX);
+						float r2 = ((double) rand() / RAND_MAX);
+						glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
+						glm::dvec3 sampleWorld( 
+							sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
+							sample.x * nb.y + sample.y * n.y + sample.z * nt.y,
+							sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
+						ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
+						glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
+						contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b) * m.kd(i);
+						
+					}
+				}
+				contribution /= (float) pathSamples;
+				indirect += contribution;
+			}
+			else if (m.Spec())
+			{
+				createCoordinateSystem(reflect, nt, nb);
+				glm::dvec3 contribution(0.0, 0.0, 0.0);
+				uint32_t l = 0;
+				float maxKs = glm::max(glm::max(m.ks(i).x,m.ks(i).y), m.ks(i).z);
+				int reflectionRays = std::round(pathSamples * maxKs);
+				// printf("%d reflection rays\n", reflectionRays);
+				for(; l < reflectionRays; ++l)
+				{
+					// printf("reflection ray\n");
+					float r1 = ((double) rand() / RAND_MAX) * (1 - m.shininess(i));
+					float r2 = ((double) rand() / RAND_MAX);
+					glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
+					// if(glm::dot(sample, n) < 0)
+					// {
+					// 	sample = sample - 2 * glm::dot(sample, n) * n;
+					// }
+					glm::dvec3 sampleWorld( 
+						sample.x * nb.x + sample.y * reflect.x + sample.z * nt.x,
+						sample.x * nb.y + sample.y * reflect.y + sample.z * nt.y,
+						sample.x * nb.z + sample.y * reflect.z + sample.z * nt.z);
+					ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, m.ks(i), ray::REFLECTION);
+					glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
+					contribution += (traced.x < 0 || traced.y < 0 || traced.z < 0)?glm::dvec3(0, 0, 0) : traced;
 				}
 				for(; l < pathSamples; ++l)
 				{
@@ -282,48 +333,6 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 				contribution /= (float) pathSamples;
 				indirect += contribution;
 			}
-			// else if(m.Spec())
-			// {
-			// 	createCoordinateSystem(reflect, nt, nb);
-			// 	glm::dvec3 contribution(0.0, 0.0, 0.0);
-			// 	uint32_t l = 0;
-			// 	for(; l < pathSamples * glm::max(glm::max(m.ks(i).x, m.ks(i).y), m.ks(i).z); ++l)
-			// 	{
-			// 		float r1 = ((double) rand() / RAND_MAX) * (1 - m.shininess(i));
-			// 		float r2 = ((double) rand() / RAND_MAX);
-			// 		glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
-			// 		// if(glm::dot(sample, n) < 0)
-			// 		// {
-			// 		// 	sample = sample - 2 * glm::dot(sample, n) * n;
-			// 		// }
-			// 		glm::dvec3 sampleWorld( 
-			// 			sample.x * nb.x + sample.y * reflect.x + sample.z * nt.x,
-			// 			sample.x * nb.y + sample.y * reflect.y + sample.z * nt.y,
-			// 			sample.x * nb.z + sample.y * reflect.z + sample.z * nt.z);
-			// 		ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, m.ks(i), ray::REFLECTION);
-			// 		glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
-			// 		contribution += (traced.x < 0 || traced.y < 0 || traced.z < 0)?glm::dvec3(0, 0, 0) : traced;
-					
-			// 	}
-			// 	createCoordinateSystem(n, nt, nb);
-			// 	for(; l < pathSamples; ++l)
-			// 	{
-			// 		float r1 = ((double) rand() / RAND_MAX);
-			// 		float r2 = ((double) rand() / RAND_MAX);
-			// 		glm::dvec3 sample = uniformSampleHemisphere(r1, r2);
-			// 		glm::dvec3 sampleWorld( 
-			// 			sample.x * nb.x + sample.y * n.x + sample.z * nt.x,
-			// 			sample.x * nb.y + sample.y * n.y + sample.z * nt.y,
-			// 			sample.x * nb.z + sample.y * n.z + sample.z * nt.z);
-			// 		ray sampleRay(intersectPosition + sampleWorld * RAY_EPSILON, sampleWorld, glm::dvec3(1,1,1), ray::REFLECTION);
-			// 		glm::dvec3 traced = traceRay(sampleRay, thresh, depth - 1, t);
-			// 		contribution += glm::dvec3(r1 * traced.r, r1 * traced.g, r1 * traced.b) * m.kd(i);
-					
-			// 	}
-
-			// 	contribution /= (float)pathSamples;
-			// 	indirect += contribution;
-			// }
 			else
 			{
 				// printf("only diffuse\n");
@@ -388,8 +397,12 @@ glm::dvec3 RayTracer::traceRay(ray& r, const glm::dvec3& thresh, int depth, doub
 			// 	}
 				
 			// }
+			// colorC += indirect;
 
 		}
+		// else {
+		// 	colorC += direct * m.kd(i);
+		// }
 		colorC += direct * m.kd(i) + indirect;
 	} else {
 		// No intersection.  This ray travels to infinity, so we color
